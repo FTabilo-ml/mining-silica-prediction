@@ -1,0 +1,4 @@
+outs:
+- md5: ea6ec99fbf272f36eed93e0f9a007697
+  size: 1109946
+  path: lstm_model.pt
