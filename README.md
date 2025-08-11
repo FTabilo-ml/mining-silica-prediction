@@ -1,6 +1,6 @@
 # Silica Concentration Prediction
 
-This repository hosts a reproducible pipeline for predicting the percentage of silica in a mining concentrate stream. It contains feature engineering utilities, several model training scripts (baseline, LSTM and Transformer) and pre–computed reports.
+This repository hosts a reproducible pipeline for predicting the percentage of silica in a mining concentrate stream. It contains feature engineering utilities, several model training scripts (baseline, LSTM and Transformer), a Streamlit dashboard for interactive visualization, and pre–computed reports.
 
 ## Project structure
 
@@ -13,22 +13,25 @@ This repository hosts a reproducible pipeline for predicting the percentage of s
 ├── src/
 │   ├── features/        # Feature engineering scripts
 │   └── models/          # Model training & evaluation scripts
+└── dashboard/
+    └── app.py           # Streamlit dashboard for model comparison, lag/bias calibration, and "what-if" analysis
 ```
 
 ## Requirements
 Install Python 3.10+ and the packages listed in [`requirements.txt`](requirements.txt).
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
 The dataset and model artifacts are versioned with [DVC](https://dvc.org/). Fetch them using:
 
-```
+```bash
 dvc pull
 ```
 
 ## Usage
+
 1. Generate additional features (optional):
    ```bash
    python src/features/make_features.py
@@ -45,12 +48,23 @@ dvc pull
    ```bash
    python src/models/train_transformer.py
    ```
-5. Validate time‑series splits and compare models:
+5. Validate time-series splits and compare models:
    ```bash
    python src/models/validate_timeseries.py
    ```
+6. **Launch the Streamlit dashboard** for interactive model evaluation:
+   ```bash
+   streamlit run dashboard/app.py
+   ```
 
-Generated metrics are stored in the `reports/` folder. Cross‑validation results show a mean RMSE of **0.075**, MAE of **0.039** and R² of **0.993** on the test sets.
+The dashboard includes:
+- Side-by-side comparison of XGBoost, LSTM, Transformer, and ensemble predictions.
+- Automatic lag and bias calibration based on correlation.
+- Adjustable ensemble weights.
+- CSV export of aligned forecasts.
+- "What-if" analysis for process optimization.
+
+Generated metrics are stored in the `reports/` folder. Cross-validation results show a mean RMSE of **0.075**, MAE of **0.039** and R² of **0.993** on the test sets.
 
 ## License
 This project is released under the [MIT License](LICENSE).
