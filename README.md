@@ -26,8 +26,8 @@ Building on that foundation, our project extends the approach by:
 
 ## Dataset
 
-The dataset used in this project comes from the ([Quality Prediction in a Mining Process](https://www.kaggle.com/datasets/edumagalhaes/quality-prediction-in-a-mining-process)) on Kaggle.  
-It contains time-series measurements of silica concentration and other process variables from a mining operation.
+The dataset used in this project comes from the [Quality Prediction in a Mining Process](https://www.kaggle.com/datasets/edumagalhaes/quality-prediction-in-a-mining-process) dataset on Kaggle.  
+It contains hourly time-series measurements of silica concentration and other process variables from an iron ore flotation plant, including feed and concentrate compositions, pH, density, air flow, and reagent dosages.
 
 To download it manually:
 
@@ -39,8 +39,8 @@ To download it manually:
 3. Place your `kaggle.json` in `~/.kaggle/` (Linux/Mac) or `%USERPROFILE%\.kaggle\` (Windows).  
 4. Download the dataset:
    ```bash
-   kaggle datasets download -d imoore/mining-core-sampling-dataset -p data/raw
-   unzip data/raw/mining-core-sampling-dataset.zip -d data/raw
+   kaggle datasets download -d edumagalhaes/quality-prediction-in-a-mining-process -p data/raw
+   unzip data/raw/quality-prediction-in-a-mining-process.zip -d data/raw
    ```
 
 ## Requirements
