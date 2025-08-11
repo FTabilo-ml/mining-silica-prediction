@@ -2,8 +2,8 @@ name: Docker Image
 
 on:
   push:
-    tags: [ "v*" ]
-  workflow_dispatch:
+    tags: [ "v*" ]        # corre al publicar tags tipo v1.0.0
+  workflow_dispatch:      # corre manualmente desde Actions
 
 permissions:
   packages: write
@@ -11,30 +11,22 @@ permissions:
 
 jobs:
   docker:
-    if: ${{ hashFiles('Dockerfile') != '' }}
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ── Gate: si no hay Dockerfile, marcamos skip=true y no hacemos nada ──
+      - name: Check for Dockerfile
+        id: gate
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Dockerfile found, skipping build."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        if: ${{ steps.gate.outputs.skip !=
