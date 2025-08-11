@@ -1,6 +1,15 @@
 # Silica Concentration Prediction
 
 This repository hosts a reproducible pipeline for predicting the percentage of silica in a mining concentrate stream. It contains feature engineering utilities, several model training scripts (baseline, LSTM and Transformer) and pre–computed reports.
+## Inspirations
+
+This project is inspired by the work done in [Quality_Prediction_ML by npatel221](https://github.com/npatel221/Quality_Prediction_ML), which applied machine learning techniques to predict the percentage of silica (an impurity) in iron ore concentrate using flotation plant data :contentReference[oaicite:2]{index=2}.
+
+Building on that foundation, our project extends the approach by:
+- Introducing advanced architectures such as LSTM and Transformer
+- Structuring a modular and reproducible pipeline (via DVC)
+- Including a visual dashboard for exploratory analysis
+- Integrating CI/CD, badges, and metadata enhancements to improve usability and maintainability
 
 ## Project structure
 
@@ -17,7 +26,7 @@ This repository hosts a reproducible pipeline for predicting the percentage of s
 
 ## Dataset
 
-The dataset used in this project comes from the [Mining Core Sampling Dataset](https://www.kaggle.com/datasets/imoore/mining-core-sampling-dataset) on Kaggle.  
+The dataset used in this project comes from the ([Quality Prediction in a Mining Process](https://www.kaggle.com/datasets/edumagalhaes/quality-prediction-in-a-mining-process)) on Kaggle.  
 It contains time-series measurements of silica concentration and other process variables from a mining operation.
 
 To download it manually:
