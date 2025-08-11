@@ -31,6 +31,10 @@ jobs:
       PYTHONUNBUFFERED: "1"
       DATA_PATH: data/processed/train.parquet
       RESULTS_DIR: results/dashboard
+      # Pasamos secretos a env (permitido) para usarlos en shell, NO en if: de YAML
+      DVC_REMOTE_URL: ${{ secrets.DVC_REMOTE_URL }}
+      DVC_ACCESS_KEY: ${{ secrets.DVC_ACCESS_KEY }}
+      DVC_SECRET_KEY: ${{ secrets.DVC_SECRET_KEY }}
 
     steps:
       - name: Checkout
@@ -50,6 +54,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential
 
+      # Gate suave: si no hay requirements.txt, no fallar
       - name: Check requirements.txt
         id: reqs
         run: |
@@ -67,23 +72,25 @@ jobs:
           pip install -r requirements.txt
           pip install pytest ruff || true
 
-      # (Opcional) DVC pull — solo si definiste el secreto DVC_REMOTE_URL
+      # DVC pull opcional SIN usar secrets en if:
       - name: DVC pull (optional)
-        if: ${{ and(steps.reqs.outputs.missing != 'true', secrets.DVC_REMOTE_URL != '') }}
         run: |
-          pip install "dvc[all]"
-          dvc remote add -f origin "${{ secrets.DVC_REMOTE_URL }}"
-          # Para remotos con credenciales:
-          # dvc remote modify origin --local access_key_id "${{ secrets.DVC_ACCESS_KEY }}"
-          # dvc remote modify origin --local secret_access_key "${{ secrets.DVC_SECRET_KEY }}"
-          dvc pull || echo "DVC pull skipped or failed (no remote?)"
-
+          if [ -n "${DVC_REMOTE_URL}" ]; then
+            pip install "dvc[all]"
+            dvc remote add -f origin "${DVC_REMOTE_URL}"
+            # Si tu remote requiere credenciales: descomenta y define los secretos
+            # dvc remote modify origin --local access_key_id "${DVC_ACCESS_KEY}"
+            # dvc remote modify origin --local secret_access_key "${DVC_SECRET_KEY}"
+            dvc pull || echo "DVC pull skipped or failed (no remote?)"
+          else
+            echo "Skipping DVC pull (no DVC_REMOTE_URL secret)"
+          fi
 
       - name: Lint (ruff)
         run: |
           if command -v ruff >/dev/null 2>&1; then
             ruff --version
-            # No fallar por warnings (quita '|| true' para hacerlo obligatorio)
+            # No fallar por avisos; quita '|| true' para hacerlo estricto
             ruff check . || true
           else
             echo "ruff not installed; skipping"
