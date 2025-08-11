@@ -50,7 +50,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential
 
-      # Gate suave: si no hay requirements.txt, no fallar
       - name: Check requirements.txt
         id: reqs
         run: |
@@ -66,25 +65,24 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # Extras para CI (opcionales)
-          pip install pytest ruff
+          pip install pytest ruff || true
 
-      # (Opcional) DVC pull — solo si definiste el secreto DVC_REMOTE_URL
       - name: DVC pull (optional)
         if: ${{ secrets.DVC_REMOTE_URL && steps.reqs.outputs.missing != 'true' }}
         run: |
           pip install "dvc[all]"
           dvc remote add -f origin "${{ secrets.DVC_REMOTE_URL }}"
-          # Para remotos con credenciales, habilita estos secretos:
           # dvc remote modify origin --local access_key_id "${{ secrets.DVC_ACCESS_KEY }}"
           # dvc remote modify origin --local secret_access_key "${{ secrets.DVC_SECRET_KEY }}"
           dvc pull || echo "DVC pull skipped or failed (no remote?)"
 
       - name: Lint (ruff)
         run: |
-          if python -c "import importlib; importlib.import_module('ruff')" 2>/dev/null; then
+          if python - <<'PY' 2>/dev/null; then
+          import importlib; importlib.import_module("ruff")
+          PY
+          then
             ruff --version
-            # No fallar si hay avisos (quítale '|| true' para hacerlo obligatorio)
             ruff check . || true
           else
             echo "ruff not installed; skipping"
@@ -94,7 +92,7 @@ jobs:
         run: |
           # Errores de sintaxis
           python -m py_compile $(git ls-files '*.py')
-          # Chequeos rápidos sin lanzar Streamlit
+          # Chequeos rápidos (sin lanzar Streamlit)
           python - << 'PY'
           from pathlib import Path
           try:
@@ -119,7 +117,7 @@ jobs:
             echo "No tests/ directory. Skipping."
           fi
 
-      - name: Produce dashboard snapshot (optional smoke)
+      - name: Produce dashboard snapshot (optional)
         run: |
           python - << 'PY'
           from pathlib import Path
@@ -128,16 +126,4 @@ jobs:
           data_ok = Path("data/processed/train.parquet").exists()
           if models_ok and data_ok:
               out = Path("results/dashboard/last_snapshot.csv")
-              out.parent.mkdir(parents=True, exist_ok=True)
-              pd.DataFrame({"ok": [1]}).to_csv(out, index=False)
-              print("Snapshot dummy created:", out)
-          else:
-              print("Skipping snapshot (missing models or data)")
-          PY
-
-      - name: Upload snapshot artifact (if exists)
-        uses: actions/upload-artifact@v4
-        with:
-          name: dashboard-snapshot
-          path: results/dashboard/last_snapshot.csv
-          if-no-files-found: ignore
+              out.parent.mkdir(parents=Tru
