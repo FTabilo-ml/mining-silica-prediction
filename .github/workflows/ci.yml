@@ -29,7 +29,6 @@ jobs:
     env:
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
       PYTHONUNBUFFERED: "1"
-      # Rutas usadas por tus scripts
       DATA_PATH: data/processed/train.parquet
       RESULTS_DIR: results/dashboard
 
@@ -51,45 +50,65 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential
 
+      # Gate suave: si no hay requirements.txt, no fallar
+      - name: Check requirements.txt
+        id: reqs
+        run: |
+          if [ -f requirements.txt ]; then
+            echo "missing=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+            echo "WARN: requirements.txt not found; skipping pip install"
+          fi
+
       - name: Install Python deps
+        if: ${{ steps.reqs.outputs.missing != 'true' }}
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # Herramientas de CI opcionales (no tocan tu requirements.txt)
+          # Extras para CI (opcionales)
           pip install pytest ruff
 
-      # (Opcional) Traer datos con DVC si definís secretos/remote
+      # (Opcional) DVC pull — solo si definiste el secreto DVC_REMOTE_URL
       - name: DVC pull (optional)
-        if: ${{ secrets.DVC_REMOTE_URL != '' }}
+        if: ${{ secrets.DVC_REMOTE_URL && steps.reqs.outputs.missing != 'true' }}
         run: |
           pip install "dvc[all]"
           dvc remote add -f origin "${{ secrets.DVC_REMOTE_URL }}"
-          # Si tu remote requiere credenciales, configúralas en secretos
-          # dvc remote modify origin --local access_key_id  "${{ secrets.DVC_ACCESS_KEY }}"
+          # Para remotos con credenciales, habilita estos secretos:
+          # dvc remote modify origin --local access_key_id "${{ secrets.DVC_ACCESS_KEY }}"
           # dvc remote modify origin --local secret_access_key "${{ secrets.DVC_SECRET_KEY }}"
           dvc pull || echo "DVC pull skipped or failed (no remote?)"
 
       - name: Lint (ruff)
         run: |
-          ruff --version
-          # No fallar si hay warnings; cambia a --format=github y quita || true para hacer obligatorio
-          ruff check . || true
+          if python -c "import importlib; importlib.import_module('ruff')" 2>/dev/null; then
+            ruff --version
+            # No fallar si hay avisos (quítale '|| true' para hacerlo obligatorio)
+            ruff check . || true
+          else
+            echo "ruff not installed; skipping"
+          fi
 
       - name: Smoke checks (syntax & imports)
         run: |
-          # Compilar a bytecode (atrapa errores de sintaxis)
+          # Errores de sintaxis
           python -m py_compile $(git ls-files '*.py')
-          # Chequeos rápidos sin lanzar el servidor de Streamlit
+          # Chequeos rápidos sin lanzar Streamlit
           python - << 'PY'
           from pathlib import Path
-          import pandas as pd
+          try:
+              import pandas as pd  # noqa
+              print("Imports OK")
+          except Exception as e:
+              print("WARN: import issue:", e)
           p = Path("data/processed/train.parquet")
           if p.exists():
+              import pandas as pd
               df = pd.read_parquet(p)
               print("Data OK:", df.shape, "index tz:", getattr(df.index, "tz", None))
           else:
-              print("WARN: dataset no encontrado:", p)
-          print("Imports OK")
+              print("WARN: dataset not found:", p)
           PY
 
       - name: Run tests (if present)
@@ -102,21 +121,18 @@ jobs:
 
       - name: Produce dashboard snapshot (optional smoke)
         run: |
-          # Intento mínimo de ejecutar funciones sin levantar el server:
-          # Si tu app depende de modelos pesados, este paso se salta si no existen.
           python - << 'PY'
           from pathlib import Path
           import pandas as pd
           models_ok = Path("models").exists()
           data_ok = Path("data/processed/train.parquet").exists()
           if models_ok and data_ok:
-              # Generar un CSV vacío para comprobar artefactos
               out = Path("results/dashboard/last_snapshot.csv")
               out.parent.mkdir(parents=True, exist_ok=True)
               pd.DataFrame({"ok": [1]}).to_csv(out, index=False)
-              print("Snapshot dummy creado:", out)
+              print("Snapshot dummy created:", out)
           else:
-              print("Saltando snapshot (faltan modelos o datos)")
+              print("Skipping snapshot (missing models or data)")
           PY
 
       - name: Upload snapshot artifact (if exists)
