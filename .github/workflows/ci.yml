@@ -69,14 +69,15 @@ jobs:
 
       # (Opcional) DVC pull — solo si definiste el secreto DVC_REMOTE_URL
       - name: DVC pull (optional)
-        if: ${{ steps.reqs.outputs.missing != 'true' && secrets.DVC_REMOTE_URL != '' }}
+        if: ${{ and(steps.reqs.outputs.missing != 'true', secrets.DVC_REMOTE_URL != '') }}
         run: |
           pip install "dvc[all]"
           dvc remote add -f origin "${{ secrets.DVC_REMOTE_URL }}"
-          # Para remotos con credenciales, habilita también estos secretos:
+          # Para remotos con credenciales:
           # dvc remote modify origin --local access_key_id "${{ secrets.DVC_ACCESS_KEY }}"
           # dvc remote modify origin --local secret_access_key "${{ secrets.DVC_SECRET_KEY }}"
           dvc pull || echo "DVC pull skipped or failed (no remote?)"
+
 
       - name: Lint (ruff)
         run: |
