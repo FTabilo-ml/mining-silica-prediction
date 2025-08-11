@@ -2,31 +2,69 @@ name: Docker Image
 
 on:
   push:
-    tags: [ "v*" ]        # corre al publicar tags tipo v1.0.0
-  workflow_dispatch:      # corre manualmente desde Actions
-
-permissions:
-  packages: write
-  contents: read
+    branches: [ main ]
+    paths:
+      - "Dockerfile"
+      - ".github/workflows/docker.yml"
+  release:
+    types: [ published ]
+  workflow_dispatch:
 
 jobs:
-  docker:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Gate: si no hay Dockerfile, marcamos skip=true y no hacemos nada ──
-      - name: Check for Dockerfile
-        id: gate
+      # Gate: si no hay Dockerfile, saltamos el job
+      - name: Check Dockerfile
+        id: check
         run: |
           if [ -f Dockerfile ]; then
-            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No Dockerfile found, skipping build."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No Dockerfile found; skipping."
           fi
 
-      - name: Set up Buildx
-        if: ${{ steps.gate.outputs.skip !=
+      - name: Set up QEMU
+        if: ${{ steps.check.outputs.exists == 'true' }}
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: ${{ steps.check.outputs.exists == 'true' }}
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: ${{ steps.check.outputs.exists == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        if: ${{ steps.check.outputs.exists == 'true' }}
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Build and push
+        if: ${{ steps.check.outputs.exists == 'true' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
