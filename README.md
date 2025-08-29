@@ -79,6 +79,69 @@ dvc pull
    ```
 
 Generated metrics are stored in the `reports/` folder. Cross‑validation results show a mean RMSE of **0.075**, MAE of **0.039** and R² of **0.993** on the test sets.
+# ☁️ Cloud Architecture (Azure)
 
+To extend the project beyond local experiments, we evolved the pipeline into a **cloud-native architecture on Azure**, making it scalable, queryable, and ready for monitoring.
+
+## Architecture Components
+
+### Data Lake (ADLS Gen2)
+A hierarchical storage account organizes data into the classical **bronze / silver / gold** layers:
+
+- **Bronze**: Raw CSVs directly from the source (e.g., flotation process logs)
+- **Silver**: Cleaned and preprocessed features stored as Parquet
+- **Gold**: Curated datasets and aggregated KPIs for reporting
+
+### Synapse Serverless SQL
+A lightweight data warehouse layer implemented using Synapse Serverless. It queries CSV and Parquet directly from the Data Lake without duplicating data.
+
+**Features:**
+- **External Data Sources** connected to the lake
+- **External Tables & Views** to expose metrics (pH, reagent flows, % silica concentrate)
+- Daily aggregated KPIs to track process stability
+
+### Monitoring & Alerts
+The API and models were deployed in **Azure Container Apps**, connected to **Log Analytics**.
+
+- Real-time log collection for debugging and audit trails
+- Action Groups + Alerts configured for email notifications when:
+  - Service becomes unavailable
+  - Anomalies are detected
+
+### BI & Visualization
+Synapse queries connected to **Power BI** for interactive dashboards and process monitoring.
+
+**Dashboard Features:**
+- Time series of critical variables (pH, starch/amine flows, concentrate silica)
+- Daily KPI aggregates
+- Distribution plots to track flotation process variability
+
+### Mini "Redshift" in Azure
+This setup behaves like a serverless warehouse: data is queried on demand directly from the lake, enabling both ML model consumption and business reporting.
+
+## Status
+
+> **Note**: The cloud architecture is still a work in progress as we continue refining ingestion, permissions, and model integration. However, the foundation already enables queries, monitoring, and visualization end-to-end.
+
+## 🔧 Architecture Diagram
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Data Sources  │───▶│   ADLS Gen2      │───▶│  Synapse SQL    │
+│                 │    │                  │    │                 │
+│ • Flotation     │    │ • Bronze (Raw)   │    │ • External      │
+│   Process Logs  │    │ • Silver (Clean) │    │   Tables/Views  │
+│ • Sensor Data   │    │ • Gold (KPIs)    │    │ • Aggregations  │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                 │                        │
+                                 │                        │
+┌─────────────────┐              │               ┌─────────────────┐
+│  Container Apps │              │               │    Power BI     │
+│                 │              │               │                 │
+│ • ML Models     │◀─────────────┘               │ • Dashboards    │
+│ • API Services  │                              │ • Time Series   │
+│ • Log Analytics │                              │ • KPI Reports   │
+└─────────────────┘                              └─────────────────┘
+```
 ## License
 This project is released under the [MIT License](LICENSE).
