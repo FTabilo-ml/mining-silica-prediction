@@ -1,24 +1,25 @@
 # Core
 numpy>=1.24,<3
 pandas>=2.0,<3
-scipy>=1.10        # dependencia de scikit-learn
+scipy>=1.10          # dependencia de scikit-learn
 
-# ML
+# ML (solo librerías usadas en inferencia)
 scikit-learn>=1.4,<1.6
 xgboost>=2.0
 torch>=2.6
-
-# Optimización / utilidades
-optuna>=3.4
 joblib>=1.3
-tqdm>=4.65
 
-# I/O y parquet
+# API / servidor
+fastapi==0.115.0
+uvicorn==0.30.5
+pydantic==2.8.2
+pydantic-settings==2.4.0
+starlette>=0.37
+
+# I/O
 pyarrow>=12
 
-# Visualización / dashboard
-matplotlib>=3.7
-streamlit>=1.33
-
-# Control de datos/experimentos (opcional pero lo estás usando)
-dvc>=3.0
+# (Opcional según BD que uses en Azure)
+# psycopg2-binary>=2.9   # si usas PostgreSQL
+# pyodbc>=5.0            # si usas Azure SQL Server
+# sqlalchemy>=2.0        # ORM

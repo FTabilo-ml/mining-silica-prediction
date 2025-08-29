@@ -26,7 +26,7 @@ MODELS_DIR  = ROOT / "models"
 RESULTS_DIR = ROOT / "results/dashboard"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
-XGB_PATH = MODELS_DIR / "best_model.pkl"
+XGB_PATH = MODELS_DIR / "model_xgb.pkl"
 LSTM_PATH = MODELS_DIR / "lstm_model_patched.pt"
 TR_PATH   = MODELS_DIR / "transformer_best_patched.pt"
 TARGET    = "% Silica Concentrate"
